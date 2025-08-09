@@ -15,6 +15,7 @@ disableKinds = ["sitemap", "RSS", "taxonomy", "term"]
 
 [languages]
   [languages.en]
+    themeColor = "green"
     title = "RoninSec - Cyber Journal"
     subtitle = "My Hacking Journey"
     keywords = ""
