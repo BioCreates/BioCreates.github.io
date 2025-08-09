@@ -1,0 +1,38 @@
+baseurl = "https://BioCreates.github.io/"
+languageCode = "en-us"
+theme = "terminal"
+pagination.pagerSize = 5
+disableKinds = ["sitemap", "RSS", "taxonomy", "term"]
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[params]
+  contentTypeName = "posts"
+  showMenuItems = 2
+  fullWidthTheme = false
+  centerTheme = true
+
+[languages]
+  [languages.en]
+    title = "RoninSec - Cyber Journal"
+    subtitle = "My Hacking Journey"
+    keywords = ""
+    copyright = ""
+    menuMore = "Show more"
+    readMore = "Read more"
+    readOtherPosts = "Read other posts"
+
+    [languages.en.params.logo]
+      logoText = "RoninSec"
+      logoHomeLink = "/"
+
+    [languages.en.menu]
+      [[languages.en.menu.main]]
+        identifier = "about"
+        name = "About"
+        url = "/about"
+#      [[languages.en.menu.main]]
+#        identifier = "showcase"
+#        name = "Showcase"
+#        url = "/showcase"
