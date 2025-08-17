@@ -1,7 +1,7 @@
 +++
 title = "RDP Brute Force — Sigma Rule and Walkthrough"
 slug = "rdp-bruteforce-sigma"
-date = "2025-08-09T08:16:10-04:00"
+date = "2025-08-17T16:50:10-04:00"
 author = "RoninSec"
 cover = "/img/rdp-bruteforce-banner.png"
 tags = ["sigma", "windows-logs", "event-4625", "rdp", "blue-team"]
