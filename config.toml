@@ -37,3 +37,9 @@ disableKinds = ["sitemap", "RSS", "taxonomy", "term"]
 #        identifier = "showcase"
 #        name = "Showcase"
 #        url = "/showcase"
+[markup]
+  [markup.highlight]
+    noClasses = false     # lets theme CSS style code
+    guessSyntax = true
+    lineNos = false
+    style = "monokai"     # try: github, dracula, xcode, etc.
