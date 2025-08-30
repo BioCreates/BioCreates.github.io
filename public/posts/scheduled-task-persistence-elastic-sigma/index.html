@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  
+    <title>Lab #2 – Hunting Scheduled Task Persistence with Elastic &amp; Sigma :: RoninSec - Cyber Journal</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Detect scheduled task persistence using Sysmon Event ID 1, Elastic Agent, and a converted Sigma rule." />
+<meta name="keywords" content="sigma, scheduled task persistence, Sysmon Event ID 1, schtasks, Elastic SIEM" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="http://localhost:1313/posts/scheduled-task-persistence-elastic-sigma/" />
+
+
+
+
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/custom.min.d73532785c7a795aaf611a5b86795f5a1c015d4bb8d67e6df8015f8e3b426f68.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/buttons.min.86f6b4c106b6c6eb690ae5203d36b442c1f66f718ff4e8164fa86cf6c61ad641.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/code.min.d529ea4b2fb8d34328d7d31afc5466d5f7bc2f0bc9abdd98b69385335d7baee4.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/fonts.min.5bb7ed13e1d00d8ff39ea84af26737007eb5051b157b86fc24487c94f3dc8bbe.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/footer.min.eb8dfc2c6a7eafa36cd3ba92d63e69e849e2200e0002a228d137f236b09ecd75.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/gist.min.a751e8b0abe1ba8bc53ced52a38b19d8950fe78ca29454ea8c2595cf26aad5c0.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/header.min.75c7eb0e2872d95ff48109c6647d0223a38db52e2561dd87966eb5fc7c6bdac6.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/main.min.775ac2af004d44c22a6d000fbd1d9af529642f5cef27399d0280d180af2c2e9b.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/menu.min.310d32205bdedd6f43144e3c3273c9deecd238eba5f9108db5ea96ca0cfbe377.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/pagination.min.bbb986dbce00a5ce5aca0504b7925fc1c581992a4bf57f163e5d69cc1db7d836.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/post.min.ad50c7f4d00e7975918f37fc74c6029e1959a40d66fb5b2c6564a8715e985573.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/syntax.min.e9ab635cf918bc84b901eb65c0b2caa74c9544245e3647c1af5c129896ef276e.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/terminal.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/terms.min.b81791663c3790e738e571cdbf802312390d30e4b1d8dc9d814a5b5454d0ac11.css">
+
+
+<link rel="stylesheet" href="http://localhost:1313/terminal.css">
+
+
+
+
+<link rel="shortcut icon" href="http://localhost:1313/favicon.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+
+
+<meta name="twitter:card" content="summary" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Lab #2 – Hunting Scheduled Task Persistence with Elastic &amp; Sigma">
+<meta property="og:description" content="Detect scheduled task persistence using Sysmon Event ID 1, Elastic Agent, and a converted Sigma rule." />
+<meta property="og:url" content="http://localhost:1313/posts/scheduled-task-persistence-elastic-sigma/" />
+<meta property="og:site_name" content="RoninSec - Cyber Journal" />
+
+  
+  
+    
+  
+  <meta property="og:image" content="http://localhost:1313/posts/scheduled-task-persistence-elastic-sigma/scheduled-task-banner.png">
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+
+  <meta property="article:published_time" content="2025-08-24 16:30:00 -0400 EDT" />
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/custom.min.d73532785c7a795aaf611a5b86795f5a1c015d4bb8d67e6df8015f8e3b426f68.css" integrity="sha256-1zUyeFx6eVqvYRpbhnlfWhwBXUu41n5t&#43;AFfjjtCb2g=">
+
+
+</head>
+<body>
+
+
+<div class="container center">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    RoninSec
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about" >About</a></li>
+        
+      
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="http://localhost:1313/posts/scheduled-task-persistence-elastic-sigma/">Lab #2 – Hunting Scheduled Task Persistence with Elastic &amp; Sigma</a>
+  </h1>
+  <div class="post-meta"><time class="post-date">2025-08-24</time><span class="post-author">RoninSec</span><span class="post-reading-time">4 min read (833 words)</span></div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="http://localhost:1313/tags/elastic/">elastic</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/sigma/">sigma</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/docker/">docker</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/sysmon/">sysmon</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/blue-team/">blue-team</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/persistence/">persistence</a>&nbsp;
+      
+    </span>
+  
+  
+  <img src="/posts/scheduled-task-persistence-elastic-sigma/scheduled-task-banner.png"
+    class="post-cover"
+    alt="Lab #2 – Hunting Scheduled Task Persistence with Elastic & Sigma"
+    title="Cover Image" />
+
+
+  
+
+  <div class="post-content"><div>
+        <h2 id="overview">Overview<a href="#overview" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>This lab was my first attempt at detection engineering with <strong>Elastic + Sigma</strong>.<br>
+I set up a temporary Elastic/Kibana stack in Docker, connected a Windows VM via Elastic Agent, simulated persistence with <code>schtasks</code>, and hunted it with a converted Sigma rule.</p>
+<p>Along the way, I hit a bunch of errors that forced me to dig deeper — exactly the kind of troubleshooting I want to document here.</p>
+<hr>
+<h2 id="step-1--elastic-in-docker">Step 1 – Elastic in Docker<a href="#step-1--elastic-in-docker" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>I started by installing Docker and creating a <code>docker-compose.yml</code> to bring up <strong>Elasticsearch</strong> and <strong>Kibana</strong>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">services</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">elasticsearch</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">docker.elastic.co/elasticsearch/elasticsearch:8.12.2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l">es01</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">node.name=es01</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">discovery.type=single-node</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">xpack.security.enabled=true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">ELASTIC_PASSWORD=${ELASTIC_PASSWORD}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">xpack.security.http.ssl.enabled=false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">xpack.security.transport.ssl.enabled=false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">ES_JAVA_OPTS=-Xms1g -Xmx1g</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s2">&#34;9200:9200&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">esdata:/usr/share/elasticsearch/data</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">kibana</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">docker.elastic.co/kibana/kibana:8.12.2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l">kib01</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">ELASTICSEARCH_HOSTS=http://elasticsearch:9200</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">ELASTICSEARCH_USERNAME=kibana_system</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">ELASTICSEARCH_PASSWORD=KibanaPass123!</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">NODE_OPTIONS=--max-old-space-size=512</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s2">&#34;5601:5601&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">elasticsearch</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l">unless-stopped</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">volumes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">esdata</span><span class="p">:</span><span class="w">
+</span></span></span></code></pre></div><p>And an .env file with the superuser password:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-.env" data-lang=".env"><span class="line"><span class="cl"><span class="nv">ELASTIC_PASSWORD</span><span class="o">=</span>ChangeMe123!
+</span></span></code></pre></div><h3 id="-gotcha--wrong-account-for-kibana">💡 Gotcha – Wrong account for Kibana<a href="#-gotcha--wrong-account-for-kibana" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<p>At first I tried logging into Kibana with the elastic superuser, but Kibana requires its own service account (kibana_system).
+I had to reset its password with:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-Powershell" data-lang="Powershell"><span class="line"><span class="cl"><span class="nb">Invoke-RestMethod</span> <span class="p">`</span>
+</span></span><span class="line"><span class="cl">  <span class="n">-Method</span> <span class="n">POST</span> <span class="p">`</span>
+</span></span><span class="line"><span class="cl">  <span class="n">-Uri</span> <span class="s2">&#34;http://localhost:9200/_security/user/kibana_system/_password&#34;</span> <span class="p">`</span>
+</span></span><span class="line"><span class="cl">  <span class="n">-Headers</span> <span class="vm">@</span><span class="p">{</span> <span class="s2">&#34;Content-Type&#34;</span> <span class="p">=</span> <span class="s2">&#34;application/json&#34;</span> <span class="p">}</span> <span class="p">`</span>
+</span></span><span class="line"><span class="cl">  <span class="n">-Body</span> <span class="s1">&#39;{ &#34;password&#34;: &#34;KibanaPass123!&#34; }&#39;</span> <span class="p">`</span>
+</span></span><span class="line"><span class="cl">  <span class="n">-Credential</span> <span class="p">(</span><span class="nb">New-Object</span> <span class="n">System</span><span class="p">.</span><span class="py">Management</span><span class="p">.</span><span class="py">Automation</span><span class="p">.</span><span class="py">PSCredential</span><span class="p">(</span><span class="s2">&#34;elastic&#34;</span><span class="p">,</span> <span class="p">(</span><span class="nb">ConvertTo-SecureString</span> <span class="s2">&#34;ChangeMe123!&#34;</span> <span class="n">-AsPlainText</span> <span class="n">-Force</span><span class="p">)))</span>
+</span></span></code></pre></div><h2 id="step-2--installing-the-windows-agent">Step 2 – Installing the Windows Agent<a href="#step-2--installing-the-windows-agent" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>The Elastic portal gave me a one-liner installer, but it failed. Instead I:</p>
+<pre><code>Manually downloaded the ZIP from Elastic’s site.
+
+Extracted it to C:\Elastic\elastic-agent-8.12.2-windows-x86_64\.
+
+Noticed that running the agent actually created another directory:
+C:\Program Files\Elastic\Agent\ with its own elastic-agent.yml.
+</code></pre>
+<p>That’s the config Elastic actually uses — not the one in the extracted folder.</p>
+<p>I edited it to point to my host instead of localhost:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="nt">outputs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">default</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">elasticsearch</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">hosts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;http://192.168.1.105:9200&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;elastic&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;ChangeMe123!&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">preset</span><span class="p">:</span><span class="w"> </span><span class="l">balanced</span><span class="w">
+</span></span></span></code></pre></div><p>Then restarted the agent:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-Powershell" data-lang="Powershell"><span class="line"><span class="cl"><span class="nb">Restart-Service</span> <span class="n">-Name</span> <span class="s2">&#34;Elastic Agent&#34;</span>
+</span></span></code></pre></div><h3 id="-gotcha--wrong-config-file">💡 Gotcha – Wrong config file<a href="#-gotcha--wrong-config-file" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<p>Editing the extracted .yml did nothing. The real config lives in
+C:\Program Files\Elastic\Agent\elastic-agent.yml.
+Step 3 – Simulating Persistence</p>
+<p>On the VM, I created a scheduled task to dump whoami every minute:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cmd" data-lang="cmd"><span class="line"><span class="cl">schtasks /create /sc minute /mo 1 /tn <span class="s2">&#34;UpdaterSvc&#34;</span> /tr <span class="s2">&#34;cmd.exe /c whoami &gt; C:\Windows\Temp\whoami.txt&#34;</span> /ru SYSTEM /f
+</span></span></code></pre></div><p>Could also be ran with PowerShell:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-Powershell" data-lang="Powershell"><span class="line"><span class="cl"><span class="nv">$A</span> <span class="p">=</span> <span class="nb">New-ScheduledTaskAction</span> <span class="n">-Execute</span> <span class="s2">&#34;cmd.exe&#34;</span> <span class="n">-Argument</span> <span class="s2">&#34;/c whoami &gt; C:\Windows\Temp\whoami_ps.txt&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$T</span> <span class="p">=</span> <span class="nb">New-ScheduledTaskTrigger</span> <span class="n">-Once</span> <span class="n">-At</span> <span class="p">(</span><span class="nb">Get-Date</span><span class="p">).</span><span class="py">AddMinutes</span><span class="p">(</span><span class="mf">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">Register-ScheduledTask</span> <span class="n">-TaskName</span> <span class="s2">&#34;UpdaterSvcPS&#34;</span> <span class="n">-Action</span> <span class="nv">$A</span> <span class="n">-Trigger</span> <span class="nv">$T</span> <span class="n">-User</span> <span class="s2">&#34;SYSTEM&#34;</span> <span class="n">-RunLevel</span> <span class="n">Highest</span>
+</span></span></code></pre></div><p>Sysmon (event ID 1) captured it, and Elastic showed both the event and the whoami.txt file being written.</p>
+<h2 id="step-4--writing--converting-a-sigma-rule">Step 4 – Writing &amp; Converting a Sigma Rule<a href="#step-4--writing--converting-a-sigma-rule" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>I wrote my Sigma rule: artifacts/sigma/scheduled_task_creation_schtasks.yml</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l">Scheduled Task Creation via Schtasks</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="m">123e4567</span>-<span class="l">e89b-12d3-a456-426614174000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="l">experimental</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l">Detects creation of scheduled tasks via schtasks.exe</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">author</span><span class="p">:</span><span class="w"> </span><span class="l">RoninSec</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="m">2025</span><span class="l">/08/24</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">logsource</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l">windows</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="l">sysmon</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">detection</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selection</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">EventID</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">Image|endswith</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;\schtasks.exe&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l">selection</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">fields</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">CommandLine</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l">medium</span><span class="w">
+</span></span></span></code></pre></div><h3 id="conversion-with-sigma-cli">Conversion with Sigma CLI<a href="#conversion-with-sigma-cli" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<p>Installed Sigma CLI and plugins:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cmd" data-lang="cmd"><span class="line"><span class="cl">python -m pip install --upgrade pip
+</span></span><span class="line"><span class="cl">python -m pip install sigma-cli
+</span></span><span class="line"><span class="cl">sigma plugin install elasticsearch
+</span></span><span class="line"><span class="cl">sigma plugin install sysmon
+</span></span></code></pre></div><p>Converted rule to Lucene:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cmd" data-lang="cmd"><span class="line"><span class="cl">sigma convert -t lucene -p ecs_windows .\artifacts\sigma\scheduled_task_creation_schtasks.yml -o .\artifacts\scheduled_task_creation_schtasks_lucene.txt
+</span></span></code></pre></div><h3 id="-gotchas--conversion-errors">💡 Gotchas – Conversion errors<a href="#-gotchas--conversion-errors" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<pre><code>Missing UUID → Sigma requires a proper UUID for id. Fixed by adding one.
+
+YAML formatting error → My first draft had bad indentation. Fixed spacing.
+
+Lucene vs KQL → Elastic Discover defaults to KQL. Had to switch search language to Lucene.
+</code></pre>
+
+<img src="elasticsyntaxerror.png"  alt="Lucene Syntax Error"  class="left"    />
+
+
+<h2 id="step-5--hunting-in-elastic">Step 5 – Hunting in Elastic<a href="#step-5--hunting-in-elastic" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>The final working Lucene query:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">winlog.channel:&#34;Microsoft-Windows-Sysmon/Operational&#34; AND event.code:1 AND process.executable:*\\schtasks.exe
+</span></span></code></pre></div><p>✅ This returned the scheduled task execution events as expected.</p>
+
+<img src="schedtask.png"  alt="Elastic Scheduled Task event"  class="left"    />
+
+
+<h3 id="wrap-up">Wrap-Up<a href="#wrap-up" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<pre><code>Docker ran Elastic + Kibana fine on my lab box.
+
+Standalone agent required editing the right .yml in Program Files.
+
+Sysmon captured the persistence technique.
+
+Sigma rule + CLI let me hunt it in Elastic (after fixing UUID, YAML, and query language).
+</code></pre>
+<h2 id="gotchas-appendix-">Gotchas Appendix 📖<a href="#gotchas-appendix-" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Quick reference of issues I ran into:</p>
+<pre><code>Kibana login failed → Tried using elastic superuser; Kibana requires kibana_system.
+
+Agent not connecting → Edited the wrong .yml. The real one is in Program Files.
+
+Agent pointing to localhost → Default config uses http://localhost:9200; needed 192.168.1.105.
+
+Sigma UUID missing → Every Sigma rule needs a UUID.
+
+YAML formatting error → Misaligned indentation broke parsing.
+
+Lucene vs KQL → Elastic defaults to KQL. Switched to Lucene to run converted queries.
+</code></pre>
+<h2 id="useful-docker-commands-">Useful Docker Commands 🐋<a href="#useful-docker-commands-" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Some Docker commands I used throughout:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cmd" data-lang="cmd"><span class="line"><span class="cl">docker ps               # list running containers
+</span></span><span class="line"><span class="cl">docker compose up -d    # start services in background
+</span></span><span class="line"><span class="cl">docker compose down     # stop services
+</span></span><span class="line"><span class="cl">docker logs es01        # check logs for Elasticsearch
+</span></span><span class="line"><span class="cl">docker logs kib01       # check logs for Kibana
+</span></span><span class="line"><span class="cl">docker exec -it es01 sh # open a shell inside the container
+</span></span></code></pre></div><h3 id="whats-next">What’s Next<a href="#whats-next" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<pre><code>Learn Elastic/Kibana query building in more depth.
+
+Deploy Wazuh permanently in my environment.
+
+Write more Sigma rules for persistence techniques.
+
+Later: simulate a Wi-Fi attack on my own network and test if alerts catch it.
+</code></pre>
+<p>⚡ Takeaway: This lab wasn’t clean copy-paste work — I ran into real-world gotchas at almost every step.
+Fixing them forced me to learn how Elastic, its accounts, the Agent configs, and Sigma all actually fit together.</p>
+
+      </div></div>
+
+  
+    
+<div class="pagination">
+  <div class="pagination__title">
+    <span class="pagination__title-h"></span>
+    <hr />
+  </div>
+  <div class="pagination__buttons">
+    
+      <a href="http://localhost:1313/posts/elastic-deep-dive/" class="button inline prev">
+        &lt; [<span class="button__text">Lab #3 – Elastic Deep Dive: From Sigma to Dashboards</span>]
+      </a>
+    
+    
+      ::
+    
+    
+      <a href="http://localhost:1313/posts/rdp-bruteforce-sigma/" class="button inline next">
+         [<span class="button__text">RDP Brute Force — Sigma Rule and Walkthrough</span>] &gt;
+      </a>
+    
+  </div>
+</div>
+
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2025 Powered by <a href="https://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

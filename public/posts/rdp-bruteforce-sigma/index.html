@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  
+    <title>RDP Brute Force — Sigma Rule and Walkthrough :: RoninSec - Cyber Journal</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Detect RDP brute-force attempts using Windows Event ID 4625 (Logon Type 10) and a Sigma rule, with testing notes." />
+<meta name="keywords" content="sigma, RDP brute force, Event ID 4625, Logon Type 10" />
+
+  <meta name="robots" content="noodp" />
+
+<link rel="canonical" href="http://localhost:1313/posts/rdp-bruteforce-sigma/" />
+
+
+
+
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/custom.min.d73532785c7a795aaf611a5b86795f5a1c015d4bb8d67e6df8015f8e3b426f68.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/buttons.min.86f6b4c106b6c6eb690ae5203d36b442c1f66f718ff4e8164fa86cf6c61ad641.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/code.min.d529ea4b2fb8d34328d7d31afc5466d5f7bc2f0bc9abdd98b69385335d7baee4.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/fonts.min.5bb7ed13e1d00d8ff39ea84af26737007eb5051b157b86fc24487c94f3dc8bbe.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/footer.min.eb8dfc2c6a7eafa36cd3ba92d63e69e849e2200e0002a228d137f236b09ecd75.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/gist.min.a751e8b0abe1ba8bc53ced52a38b19d8950fe78ca29454ea8c2595cf26aad5c0.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/header.min.75c7eb0e2872d95ff48109c6647d0223a38db52e2561dd87966eb5fc7c6bdac6.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/main.min.775ac2af004d44c22a6d000fbd1d9af529642f5cef27399d0280d180af2c2e9b.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/menu.min.310d32205bdedd6f43144e3c3273c9deecd238eba5f9108db5ea96ca0cfbe377.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/pagination.min.bbb986dbce00a5ce5aca0504b7925fc1c581992a4bf57f163e5d69cc1db7d836.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/post.min.ad50c7f4d00e7975918f37fc74c6029e1959a40d66fb5b2c6564a8715e985573.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/syntax.min.e9ab635cf918bc84b901eb65c0b2caa74c9544245e3647c1af5c129896ef276e.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/terminal.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css">
+
+  
+  <link rel="stylesheet" href="http://localhost:1313/css/terms.min.b81791663c3790e738e571cdbf802312390d30e4b1d8dc9d814a5b5454d0ac11.css">
+
+
+<link rel="stylesheet" href="http://localhost:1313/terminal.css">
+
+
+
+
+<link rel="shortcut icon" href="http://localhost:1313/favicon.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+
+
+<meta name="twitter:card" content="summary" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="RDP Brute Force — Sigma Rule and Walkthrough">
+<meta property="og:description" content="Detect RDP brute-force attempts using Windows Event ID 4625 (Logon Type 10) and a Sigma rule, with testing notes." />
+<meta property="og:url" content="http://localhost:1313/posts/rdp-bruteforce-sigma/" />
+<meta property="og:site_name" content="RoninSec - Cyber Journal" />
+
+  
+  
+  <meta property="og:image" content="http://localhost:1313/img/rdp-bruteforce-banner.png">
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+
+
+  <meta property="article:published_time" content="2025-08-17 16:50:10 -0400 EDT" />
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/custom.min.d73532785c7a795aaf611a5b86795f5a1c015d4bb8d67e6df8015f8e3b426f68.css" integrity="sha256-1zUyeFx6eVqvYRpbhnlfWhwBXUu41n5t&#43;AFfjjtCb2g=">
+
+
+</head>
+<body>
+
+
+<div class="container center">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    RoninSec
+  </div>
+</a>
+
+    </div>
+    
+      <ul class="menu menu--mobile">
+  <li class="menu__trigger">Menu&nbsp;▾</li>
+  <li>
+    <ul class="menu__dropdown">
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+    </ul>
+  </li>
+</ul>
+
+    
+    
+  </div>
+  
+    <nav class="navigation-menu">
+  <ul class="navigation-menu__inner menu--desktop">
+    
+      
+        
+          <li><a href="/about" >About</a></li>
+        
+      
+      
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<article class="post">
+  <h1 class="post-title">
+    <a href="http://localhost:1313/posts/rdp-bruteforce-sigma/">RDP Brute Force — Sigma Rule and Walkthrough</a>
+  </h1>
+  <div class="post-meta"><time class="post-date">2025-08-17</time><span class="post-author">RoninSec</span><span class="post-reading-time">5 min read (884 words)</span></div>
+
+  
+    <span class="post-tags">
+      
+      #<a href="http://localhost:1313/tags/sigma/">sigma</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/windows-logs/">windows-logs</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/event-4625/">event-4625</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/rdp/">rdp</a>&nbsp;
+      
+      #<a href="http://localhost:1313/tags/blue-team/">blue-team</a>&nbsp;
+      
+    </span>
+  
+  
+  <img src="http://localhost:1313/img/rdp-bruteforce-banner.png"
+    class="post-cover"
+    alt="RDP Brute Force — Sigma Rule and Walkthrough"
+    title="Cover Image" />
+
+
+  
+
+  <div class="post-content"><div>
+        <p>Goal: Write a Sigma rule to detect RDP brute force attempts (Event ID 4625, Logon Type 10), test it locally, and document gotchas.</p>
+<h2 id="overview">Overview<a href="#overview" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>This lab demonstrates how to detect RDP brute-force attacks by combining <strong>Sysmon event logging</strong>, <strong>manual event analysis</strong>, and a <strong>Sigma rule</strong>.<br>
+We simulate an attack using Hydra from a Linux environment, verify detection with Windows Event Viewer and PowerShell, and finally formalize the detection logic in Sigma for SIEM use.</p>
+<hr>
+<h2 id="part-0--lab-setup">Part 0 – Lab Setup<a href="#part-0--lab-setup" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Before diving into the attack and detection, we built a lightweight lab to safely simulate brute-force attempts and capture logs.</p>
+<h3 id="windows-10-vm-target">Windows 10 VM (Target)<a href="#windows-10-vm-target" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<ul>
+<li>Provisioned a <strong>Windows 10 VM</strong> with RDP enabled.</li>
+<li>Installed <strong>Sysmon</strong> with the <em>SwiftOnSecurity</em> configuration for detailed event logging.</li>
+<li>This VM acted as the victim where brute-force attempts were directed.</li>
+</ul>
+<h3 id="attacker-environment">Attacker Environment<a href="#attacker-environment" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<ul>
+<li>Used <strong>WSL (Ubuntu on Windows Subsystem for Linux)</strong> to run Linux-native tools.</li>
+<li>Chose <strong>Hydra</strong> to simulate repeated RDP login attempts against the Windows VM.</li>
+</ul>
+<h3 id="monitoring-tools">Monitoring Tools<a href="#monitoring-tools" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<ul>
+<li>Relied on <strong>Windows Event Viewer</strong> as the primary log source.</li>
+<li>No SIEM was deployed — instead, detections were validated with <strong>manual log review, PowerShell scripts, and Sigma rules</strong>.</li>
+</ul>
+<h3 id="repo--documentation">Repo &amp; Documentation<a href="#repo--documentation" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<p>Created a GitHub repo: <a href="https://github.com/BioCreates/CyberSecSim/tree/main/Threat-hunting-rdp">cybersecsim/threat-hunting-rdp</a> to store:</p>
+<ul>
+<li><code>/artifacts</code> → Sigma rules</li>
+<li><code>detection.md</code> → Detection steps</li>
+<li><code>attack.md</code> → Attack details</li>
+<li><code>/logs</code> → Logs and screenshots</li>
+</ul>
+<p>This setup provided just enough realism for detection engineering practice <strong>without requiring a full enterprise SIEM or multi-VM infrastructure</strong>.</p>
+<hr>
+<h2 id="part-1--visibility-first-sysmon-config--manual-detection">Part 1 – Visibility First (Sysmon Config + Manual Detection)<a href="#part-1--visibility-first-sysmon-config--manual-detection" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Before diving into detection rules, we needed a reliable way to capture the right telemetry.</p>
+<h3 id="sysmon-installation">Sysmon Installation<a href="#sysmon-installation" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<ul>
+<li>Installed <strong>Sysmon</strong> on a Windows 10 VM.</li>
+<li>Applied the <strong>SwiftOnSecurity Sysmon configuration</strong>, which provides extensive process/network coverage with reduced noise.</li>
+<li>Confirmed capture of:
+<ul>
+<li>Event ID <code>4625</code> — Failed logon attempts</li>
+<li>Network connections (Sysmon events)</li>
+<li>Process creations for brute-force tooling</li>
+</ul>
+</li>
+</ul>
+<h3 id="manual-detection">Manual Detection<a href="#manual-detection" class="hanchor" ariaLabel="Anchor">#</a> </h3>
+<ol>
+<li>Opened <strong>Event Viewer</strong> → Windows Logs → Security.</li>
+<li>Filtered for:
+<ul>
+<li><code>Event ID 4625</code> (failed logon)</li>
+<li><code>Logon Type 10</code> (RDP/Terminal Services)</li>
+</ul>
+</li>
+<li>Looked for multiple failures from the same IP in a short time window.</li>
+<li>This confirmed the detection concept <strong>before</strong> formalizing it in Sigma.</li>
+</ol>
+
+<img src="WindowsSecurityRDPLog.png"  alt="Windows Security log – 4625/LogonType 10"  class="left"    />
+
+
+
+<img src="SysmonRDPLog.png"  alt="Sysmon network/process context"  class="left"    />
+
+
+<hr>
+<h2 id="part-2--attack-simulation-hydra-in-wsl">Part 2 – Attack Simulation (Hydra in WSL)<a href="#part-2--attack-simulation-hydra-in-wsl" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>To simulate brute-force attempts:</p>
+<ul>
+<li>Used <strong>WSL (Ubuntu)</strong> to run <code>hydra</code> because RDP brute-forcing isn’t practical in native PowerShell.</li>
+<li>Command example:</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hydra -L users.txt -P /usr/share/wordlists/rockyou.txt -t1 rdp://192.168.1.73
+</span></span></code></pre></div>
+<img src="HydraLogSS.png"  alt="Hydra output"  class="left"    />
+
+
+<ul>
+<li>Verified Event Viewer captured multiple 4625 failures tied to the test IP.</li>
+</ul>
+<hr>
+<h2 id="wsl-specific-notes--gotchas">WSL-Specific Notes &amp; Gotchas<a href="#wsl-specific-notes--gotchas" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Using WSL introduced a few extra steps:</p>
+<ul>
+<li>
+<p><strong>File Paths</strong> – WSL files live in <code>/home/king/...</code>, separate from Windows’ <code>Documents</code>.</p>
+</li>
+<li>
+<p><strong>Python/Sigma CLI</strong> – Installed and ran inside a <strong>WSL virtual environment</strong>, not Windows Python.</p>
+</li>
+<li>
+<p><strong>Workflow Choice</strong>:</p>
+<ul>
+<li>WSL for Linux-native attack tools (Hydra, some Sigma testing).</li>
+<li>Windows for Event Viewer, PowerShell, Hugo blog editing, and final file storage.</li>
+</ul>
+</li>
+<li>
+<p><strong>Lesson Learned</strong> – Keep repos and docs in one main environment (likely Windows for me) and only use WSL for the pieces that truly require it.</p>
+</li>
+</ul>
+<hr>
+<h2 id="part-3--sigma-rule-creation">Part 3 – Sigma Rule Creation<a href="#part-3--sigma-rule-creation" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Sigma is a <strong>vendor-neutral detection rule format</strong>.
+Think of it as a <em>template</em> you can convert into Splunk, Elastic, Sentinel, or other SIEM query languages.</p>
+<p><strong>Final Sigma Rule:</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l">Possible RDP Brute Force - Multiple 4625 From Single IP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">rdp-bruteforce-agg-roninsec-v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="l">experimental</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l">Flags potential RDP brute force based on repeated failed logons (Event ID 4625) from the same source IP within a short timeframe.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">logsource</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l">windows</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="l">security</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">detection</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selection</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">EventID</span><span class="p">:</span><span class="w"> </span><span class="m">4625</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">LogonType</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">timeframe</span><span class="p">:</span><span class="w"> </span><span class="l">10m</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l">selection | count(IpAddress) by IpAddress &gt;= 5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">fields</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">IpAddress</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">TargetUserName</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">WorkstationName</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">falsepositives</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">User mistyping password repeatedly</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l">medium</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">tags</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">attack.t1110</span><span class="w">
+</span></span></span></code></pre></div><blockquote>
+<p>Note: Some Sigma backends handle aggregation slightly differently. If your converter complains, we’ll adjust to its expected syntax.</p></blockquote>
+<hr>
+<h2 id="part-4--local-validation-without-a-siem">Part 4 – Local Validation (Without a SIEM)<a href="#part-4--local-validation-without-a-siem" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Since we didn’t have a SIEM hooked up, we validated the Sigma logic with PowerShell:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-powershell" data-lang="powershell"><span class="line"><span class="cl"><span class="nv">$since</span> <span class="p">=</span> <span class="p">(</span><span class="nb">Get-Date</span><span class="p">).</span><span class="py">AddMinutes</span><span class="p">(</span><span class="mf">-10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$events</span> <span class="p">=</span> <span class="nb">Get-WinEvent</span> <span class="n">-FilterHashtable</span> <span class="vm">@</span><span class="p">{</span><span class="n">LogName</span><span class="p">=</span><span class="s1">&#39;Security&#39;</span><span class="p">;</span> <span class="n">Id</span><span class="p">=</span><span class="mf">4625</span><span class="p">;</span> <span class="n">StartTime</span><span class="p">=</span><span class="nv">$since</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$parsed</span> <span class="p">=</span> <span class="nv">$events</span> <span class="p">|</span> <span class="nb">ForEach-Object</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">$x</span> <span class="p">=</span> <span class="p">[</span><span class="no">xml</span><span class="p">]</span><span class="nv">$_</span><span class="p">.</span><span class="py">ToXml</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="p">[</span><span class="no">pscustomobject</span><span class="p">]</span><span class="vm">@</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">TimeCreated</span> <span class="p">=</span> <span class="nv">$_</span><span class="p">.</span><span class="py">TimeCreated</span>
+</span></span><span class="line"><span class="cl">    <span class="n">IpAddress</span>   <span class="p">=</span> <span class="p">(</span><span class="nv">$x</span><span class="p">.</span><span class="py">Event</span><span class="p">.</span><span class="py">EventData</span><span class="p">.</span><span class="py">Data</span> <span class="p">|</span> <span class="nb">Where-Object</span> <span class="p">{</span><span class="nv">$_</span><span class="p">.</span><span class="py">Name</span> <span class="o">-eq</span> <span class="s1">&#39;IpAddress&#39;</span><span class="p">}).</span><span class="s1">&#39;#text&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">LogonType</span>   <span class="p">=</span> <span class="p">(</span><span class="nv">$x</span><span class="p">.</span><span class="py">Event</span><span class="p">.</span><span class="py">EventData</span><span class="p">.</span><span class="py">Data</span> <span class="p">|</span> <span class="nb">Where-Object</span> <span class="p">{</span><span class="nv">$_</span><span class="p">.</span><span class="py">Name</span> <span class="o">-eq</span> <span class="s1">&#39;LogonType&#39;</span><span class="p">}).</span><span class="s1">&#39;#text&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Account</span>     <span class="p">=</span> <span class="p">(</span><span class="nv">$x</span><span class="p">.</span><span class="py">Event</span><span class="p">.</span><span class="py">EventData</span><span class="p">.</span><span class="py">Data</span> <span class="p">|</span> <span class="nb">Where-Object</span> <span class="p">{</span><span class="nv">$_</span><span class="p">.</span><span class="py">Name</span> <span class="o">-eq</span> <span class="s1">&#39;TargetUserName&#39;</span><span class="p">}).</span><span class="s1">&#39;#text&#39;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$parsed</span> <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">Where-Object</span> <span class="p">{</span> <span class="nv">$_</span><span class="p">.</span><span class="py">LogonType</span> <span class="o">-eq</span> <span class="s1">&#39;10&#39;</span> <span class="p">}</span> <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">Group-Object</span> <span class="n">IpAddress</span> <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">Where-Object</span> <span class="p">{</span> <span class="nv">$_</span><span class="p">.</span><span class="py">Name</span> <span class="o">-and</span> <span class="nv">$_</span><span class="p">.</span><span class="py">Count</span> <span class="o">-ge</span> <span class="mf">5</span> <span class="p">}</span> <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">Select-Object</span> <span class="n">Name</span><span class="p">,</span> <span class="n">Count</span>
+</span></span></code></pre></div><p>If the output shows any IP with <code>Count over 5</code>, that’s the brute-force activity we simulated.</p>
+
+<img src="PSOutputExample.png"  alt="PowerShell output"  class="left"    />
+
+
+<hr>
+<h2 id="part-5--converting-the-sigma-rule">Part 5 – Converting the Sigma Rule<a href="#part-5--converting-the-sigma-rule" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>Using <strong>Uncoder.io</strong> or <code>sigma-cli</code>, the YAML rule can be translated into:</p>
+<ul>
+<li><strong>Splunk SPL</strong></li>
+<li><strong>Elastic Query DSL</strong></li>
+<li><strong>Azure Sentinel KQL</strong></li>
+</ul>
+<p><strong>Example Splunk Query:</strong></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">index=winlogs EventCode=4625 LogonType=10
+</span></span><span class="line"><span class="cl">| stats count by IpAddress
+</span></span><span class="line"><span class="cl">| where count &gt;= 5
+</span></span></code></pre></div><hr>
+<h2 id="conclusion">Conclusion<a href="#conclusion" class="hanchor" ariaLabel="Anchor">#</a> </h2>
+<p>This lab walked through the <strong>full lifecycle of detecting RDP brute-force attempts</strong>:</p>
+<ul>
+<li>Building visibility with <strong>Sysmon</strong></li>
+<li>Simulating an attack using <strong>Hydra</strong></li>
+<li>Validating detection manually in <strong>Event Viewer</strong> and <strong>PowerShell</strong></li>
+<li>Converting the logic into a portable <strong>Sigma rule</strong></li>
+</ul>
+<hr>
+<p><strong>Key takeaway:</strong><br>
+👉 Always validate your detection ideas manually before writing rules. Doing so ensures that the logs you rely on are actually being collected and that your rule logic aligns with real-world attack patterns.</p>
+<hr>
+<p>While this lab focused on <strong>RDP brute force</strong>, the same workflow can be applied to almost any attack technique:</p>
+<ol>
+<li><strong>Visibility first</strong></li>
+<li><strong>Manual confirmation</strong></li>
+<li><strong>Sigma (or equivalent) codification</strong></li>
+<li><strong>SIEM translation</strong></li>
+</ol>
+<hr>
+<p>In future labs, I’ll expand this into <strong>automated alerting with Wazuh</strong> and show how Sigma rules can power <strong>proactive detection pipelines</strong>.</p>
+      </div></div>
+
+  
+    
+<div class="pagination">
+  <div class="pagination__title">
+    <span class="pagination__title-h"></span>
+    <hr />
+  </div>
+  <div class="pagination__buttons">
+    
+      <a href="http://localhost:1313/posts/scheduled-task-persistence-elastic-sigma/" class="button inline prev">
+        &lt; [<span class="button__text">Lab #2 – Hunting Scheduled Task Persistence with Elastic &amp; Sigma</span>]
+      </a>
+    
+    
+    
+  </div>
+</div>
+
+
+  
+
+  
+    
+
+  
+</article>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2025 Powered by <a href="https://gohugo.io">Hugo</a></span>
+    
+      <span>:: <a href="https://github.com/panr/hugo-theme-terminal" target="_blank">Theme</a> made by <a href="https://github.com/panr" target="_blank">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+
+
+
+
+
+<script type="text/javascript" src="/bundle.min.js"></script>
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>
